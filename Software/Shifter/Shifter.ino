@@ -1,5 +1,11 @@
 #include "HID-Project.h"
 
+//Main Variables
+
+bool debug = false; //Set to true for testing. Adds 100ms delay to every CPU cycle so don't leave running!
+bool shifterPresent = true; //Set to false if no shifter is connected.
+bool handbrakePresent = true; //Set to false if no handbrake is connected.
+
 //Shifter Variables
 
 int gearUp = 2; //Pin 2 for top row of gears
@@ -29,7 +35,6 @@ int handbrakeUpperLimit = 300; //Used for scaling handbrake output. Increase if 
 
 bool digitalOutput = false; //Enables handbrake digital output for games that don't support analog.
 
-bool debug = false; //Set to true for testing. Adds 100ms delay to every CPU cycle so don't leave running!
 
 void setup() {
   if(debug){
@@ -44,44 +49,47 @@ void setup() {
 void loop() {
   gateSelected = analogRead(A3); //Read Potentiometer
   handbrakeReading = analogRead(handbrakePin);
-
-  if(!digitalRead(gearUp)){ //Reverse,First,Third or fifth selected
-    if(gateSelected < gate56 + gateDeadband){
-      Gamepad.press(5);
-      currentGear = 5;
-    } else if(gateSelected < gate34 + gateDeadband && gateSelected > gate34 - gateDeadband){
-      Gamepad.press(3);
-      currentGear = 3;
-    } else if(gateSelected < gate12 + gateDeadband && gateSelected > gate12 - gateDeadband){
-      Gamepad.press(1);
-      currentGear = 1;
-    } else if(gateSelected < gateR + gateDeadband && gateSelected > gateR - gateDeadband){
-      Gamepad.press(7);
-      currentGear = 7;
-    }
-  } else if(!digitalRead(gearDn)){ //Second, fourth or sixth selected
-    if(gateSelected < gate56 + gateDeadband){
-      Gamepad.press(6);
-      currentGear = 6;
-    } else if(gateSelected < gate34 + gateDeadband && gateSelected > gate34 - gateDeadband){
-      Gamepad.press(4);
-      currentGear = 4;
-    } else if(gateSelected < gate12 + gateDeadband && gateSelected > gate12 - gateDeadband){
-      Gamepad.press(2);
-      currentGear = 2;
-    } 
-  } else {
-    Gamepad.releaseAll();
-  }
-
-  if(digitalOutput){
-    if(handbrakeReading > handbrakeDigitalThreshold){
-      Gamepad.press(8);
+  if(shifterPresent){
+    if(!digitalRead(gearUp)){ //Reverse,First,Third or fifth selected
+      if(gateSelected < gate56 + gateDeadband){
+        Gamepad.press(5);
+        currentGear = 5;
+      } else if(gateSelected < gate34 + gateDeadband && gateSelected > gate34 - gateDeadband){
+        Gamepad.press(3);
+        currentGear = 3;
+      } else if(gateSelected < gate12 + gateDeadband && gateSelected > gate12 - gateDeadband){
+        Gamepad.press(1);
+        currentGear = 1;
+      } else if(gateSelected < gateR + gateDeadband && gateSelected > gateR - gateDeadband){
+        Gamepad.press(7);
+        currentGear = 7;
+      }
+    } else if(!digitalRead(gearDn)){ //Second, fourth or sixth selected
+      if(gateSelected < gate56 + gateDeadband){
+        Gamepad.press(6);
+        currentGear = 6;
+      } else if(gateSelected < gate34 + gateDeadband && gateSelected > gate34 - gateDeadband){
+        Gamepad.press(4);
+        currentGear = 4;
+      } else if(gateSelected < gate12 + gateDeadband && gateSelected > gate12 - gateDeadband){
+        Gamepad.press(2);
+        currentGear = 2;
+      } 
     } else {
-      Gamepad.release(8);
+      Gamepad.releaseAll();
     }
   }
-  Gamepad.zAxis(map(handbrakeReading, 0, handbrakeUpperLimit, -127, 128));
+
+  if(handbrakePresent){
+    if(digitalOutput){
+      if(handbrakeReading > handbrakeDigitalThreshold){
+        Gamepad.press(8);
+      } else {
+        Gamepad.release(8);
+      }
+    }
+    Gamepad.zAxis(map(handbrakeReading, 0, handbrakeUpperLimit, -127, 128));
+  }
 
   if(debug){
     Serial.print("Current Potentiometer Value: ");
