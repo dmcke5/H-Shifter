@@ -1,5 +1,7 @@
 #include "HID-Project.h"
 
+//Shifter Variables
+
 int gearUp = 2; //Pin 2 for top row of gears
 int gearDn = 3; //Pin 3 for bottom row of gears
 
@@ -15,7 +17,19 @@ int gateSelected;
 
 int currentGear = 0;
 
-bool debug = false; //Set to true to output potentiometer value and gear selected over serial.
+//Handbrake Variables
+
+int handbrakePin = A1; //Pin to connect Handbrake Load Cell
+
+int handbrakeReading; 
+
+int handbrakeDigitalThreshold = 100; //Adjust value to control when digital button is triggered.
+
+int handbrakeUpperLimit = 300; //Used for scaling handbrake output. Increase if handbrake output wraps back around to 0 at full load.
+
+bool digitalOutput = false; //Enables handbrake digital output for games that don't support analog.
+
+bool debug = false; //Set to true for testing. Adds 100ms delay to every CPU cycle so don't leave running!
 
 void setup() {
   if(debug){
@@ -29,6 +43,7 @@ void setup() {
 
 void loop() {
   gateSelected = analogRead(A3); //Read Potentiometer
+  handbrakeReading = analogRead(handbrakePin);
 
   if(!digitalRead(gearUp)){ //Reverse,First,Third or fifth selected
     if(gateSelected < gate56 + gateDeadband){
@@ -59,11 +74,24 @@ void loop() {
     Gamepad.releaseAll();
   }
 
+  if(digitalOutput){
+    if(handbrakeReading > handbrakeDigitalThreshold){
+      Gamepad.press(8);
+    } else {
+      Gamepad.release(8);
+    }
+  }
+  Gamepad.zAxis(map(handbrakeReading, 0, handbrakeUpperLimit, -127, 128));
+
   if(debug){
     Serial.print("Current Potentiometer Value: ");
     Serial.println(gateSelected);
     Serial.print("Gear Selected: ");
     Serial.println(currentGear);
+    Serial.print("Handbrake Reading: ");
+    Serial.println(handbrakeReading);
+
+    delay(100);
   }
 
   Gamepad.write();
